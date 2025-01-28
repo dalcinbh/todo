@@ -68,20 +68,18 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Instalar AWS CLI e AWS SAM CLI
+      - name: Instalar AWS SAM CLI
         run: |
-          # Atualizar AWS CLI existente
-          sudo /usr/local/aws-cli/v2/current/bin/aws --version
-          sudo /usr/local/aws-cli/v2/current/bin/aws/install --update
+          # Exibir versão do AWS CLI já instalada
+          aws --version
       
           # Instalar AWS SAM CLI corretamente
           curl -L https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.deb -o aws-sam-cli.deb
           sudo dpkg -i aws-sam-cli.deb || sudo apt-get install -f -y  # Corrigir dependências se necessário
       
           # Verificar se foi instalado corretamente
-          aws --version
           sam --version
-      
+            
       - name: Configurar credenciais AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
