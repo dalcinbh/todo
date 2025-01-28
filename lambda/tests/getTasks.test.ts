@@ -1,9 +1,14 @@
 import { handler } from "../src/handlers/getTasks";
 import { DynamoDB } from "aws-sdk";
+import * as dotenv from "dotenv";
+
+// Carrega o .env
+dotenv.config();
 
 // Mock do DynamoDB
+const mockScan = jest.fn();
+
 jest.mock("aws-sdk", () => {
-  const mockScan = jest.fn();
   return {
     DynamoDB: {
       DocumentClient: jest.fn(() => ({
@@ -13,20 +18,17 @@ jest.mock("aws-sdk", () => {
   };
 });
 
-const mockScan = (DynamoDB.DocumentClient.prototype.scan as jest.Mock);
-
 describe("getTasks", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it("deve retornar todas as tarefas com sucesso", async () => {
-    // Configura o mock do scan para retornar um resultado
-    mockScan.mockImplementationOnce(() => ({
+    mockScan.mockReturnValueOnce({
       promise: jest.fn().mockResolvedValue({
         Items: [{ taskId: "123", title: "Teste" }],
       }),
-    }));
+    });
 
     const response = await handler({});
 
@@ -37,10 +39,9 @@ describe("getTasks", () => {
   });
 
   it("deve retornar erro em caso de falha interna", async () => {
-    // Configura o mock do scan para lançar um erro
-    mockScan.mockImplementationOnce(() => ({
+    mockScan.mockReturnValueOnce({
       promise: jest.fn().mockRejectedValue(new Error("Erro interno")),
-    }));
+    });
 
     const response = await handler({});
     expect(response.statusCode).toBe(500);

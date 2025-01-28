@@ -1,7 +1,8 @@
-/**
- * Handler para listar todas as tarefas no DynamoDB.
- */
 import { DynamoDB } from "aws-sdk";
+import * as dotenv from "dotenv";
+
+// Carrega o arquivo .env
+dotenv.config();
 
 const dynamo = new DynamoDB.DocumentClient();
 const tableName = process.env.TASKS_TABLE || "";
