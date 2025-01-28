@@ -80,13 +80,11 @@ jobs:
           # Verificar se foi instalado corretamente
           sam --version
             
-      - name: Configurar credenciais AWS via Secrets
-        uses: aws-actions/configure-aws-credentials@v3
+      - name: Configurar credenciais AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Altere para sua região
-
+          role-to-assume: arn:aws:iam::183631312335:role/todogit  # Seu ARN da role aqui
+          aws-region: us-east-1  # Região AWS
 
       - name: Build com AWS SAM
         run: |
