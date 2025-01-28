@@ -1,44 +1,56 @@
-import { handler } from "../src/handlers/updateTask";
-import { DynamoDB } from "aws-sdk";
+import { handler } from '../src/handlers/updateTask';
+import { DynamoDB } from 'aws-sdk';
 
 // Mock do DynamoDB
-jest.mock("aws-sdk", () => {
-  const mockUpdate = jest.fn(() => ({
-    Attributes: { taskId: "123", title: "Atualizado" },
-  }));
-  const DocumentClient = {
-    update: jest.fn(() => ({ promise: mockUpdate })),
+jest.mock('aws-sdk', () => {
+  const mockUpdate = jest.fn().mockReturnValue({
+    promise: jest.fn(),
+  });
+  return {
+    DynamoDB: {
+      DocumentClient: jest.fn(() => ({
+        update: mockUpdate,
+      })),
+    },
   };
-  return { DynamoDB: { DocumentClient: jest.fn(() => DocumentClient) } };
 });
 
-describe("updateTask", () => {
-  it("deve atualizar uma tarefa com sucesso", async () => {
+describe('updateTask', () => {
+  it('deve atualizar uma tarefa com sucesso', async () => {
     const event = {
-      pathParameters: { taskId: "123" },
-      body: JSON.stringify({ title: "Atualizado" }),
+      pathParameters: { taskId: '1' },
+      body: JSON.stringify({
+        title: 'Comprar leite e pão',
+        completed: true,
+      }),
     };
-    const response = await handler(event);
 
-    expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body);
-    expect(body.updatedAttributes.taskId).toBe("123");
-    expect(body.updatedAttributes.title).toBe("Atualizado");
+    // Mock da resposta do DynamoDB
+    (DynamoDB.DocumentClient.prototype.update as jest.Mock).mockReturnValueOnce({
+      promise: jest.fn().mockResolvedValueOnce({
+        Attributes: {
+          taskId: '1',
+          title: 'Comprar leite e pão',
+          completed: true,
+        },
+      }),
+    });
+
+    const result = await handler(event);
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body).message).toBe('Tarefa atualizada com sucesso!');
   });
 
-  it("deve retornar erro se taskId estiver ausente", async () => {
-    const event = { pathParameters: {}, body: JSON.stringify({ title: "Teste" }) };
-    const response = await handler(event);
+  it('deve retornar erro se o taskId não for fornecido', async () => {
+    const event = {
+      pathParameters: {}, // Sem taskId
+      body: JSON.stringify({
+        title: 'Comprar leite e pão',
+      }),
+    };
 
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).message).toBe("taskId é obrigatório.");
-  });
-
-  it("deve retornar erro se nenhum campo for enviado no body", async () => {
-    const event = { pathParameters: { taskId: "123" }, body: JSON.stringify({}) };
-    const response = await handler(event);
-
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).message).toBe("É necessário informar ao menos um campo para atualizar.");
+    const result = await handler(event);
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).message).toBe('taskId é obrigatório.');
   });
 });

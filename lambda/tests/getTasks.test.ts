@@ -1,14 +1,11 @@
-import { handler } from "../src/handlers/getTasks";
-import { DynamoDB } from "aws-sdk";
-import * as dotenv from "dotenv";
-
-// Carrega o .env
-dotenv.config();
+import { handler } from '../src/handlers/getTasks';
+import { DynamoDB } from 'aws-sdk';
 
 // Mock do DynamoDB
-const mockScan = jest.fn();
-
-jest.mock("aws-sdk", () => {
+jest.mock('aws-sdk', () => {
+  const mockScan = jest.fn().mockReturnValue({
+    promise: jest.fn(),
+  });
   return {
     DynamoDB: {
       DocumentClient: jest.fn(() => ({
@@ -18,33 +15,35 @@ jest.mock("aws-sdk", () => {
   };
 });
 
-describe("getTasks", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+describe('getTasks', () => {
+  it('deve listar todas as tarefas com sucesso', async () => {
+    const event = {}; // Sem corpo necessário
 
-  it("deve retornar todas as tarefas com sucesso", async () => {
-    mockScan.mockReturnValueOnce({
-      promise: jest.fn().mockResolvedValue({
-        Items: [{ taskId: "123", title: "Teste" }],
+    // Mock da resposta do DynamoDB
+    (DynamoDB.DocumentClient.prototype.scan as jest.Mock).mockReturnValueOnce({
+      promise: jest.fn().mockResolvedValueOnce({
+        Items: [
+          { taskId: '1', title: 'Comprar leite', completed: false },
+          { taskId: '2', title: 'Estudar AWS', completed: true },
+        ],
       }),
     });
 
-    const response = await handler({});
-
-    expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body);
-    expect(body.tasks).toHaveLength(1);
-    expect(body.tasks[0].taskId).toBe("123");
+    const result = await handler(event);
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body).length).toBe(2);
   });
 
-  it("deve retornar erro em caso de falha interna", async () => {
-    mockScan.mockReturnValueOnce({
-      promise: jest.fn().mockRejectedValue(new Error("Erro interno")),
+  it('deve retornar erro se o DynamoDB falhar', async () => {
+    const event = {};
+
+    // Mock de erro no DynamoDB
+    (DynamoDB.DocumentClient.prototype.scan as jest.Mock).mockReturnValueOnce({
+      promise: jest.fn().mockRejectedValueOnce(new Error('Erro no DynamoDB')),
     });
 
-    const response = await handler({});
-    expect(response.statusCode).toBe(500);
-    expect(JSON.parse(response.body).message).toBe("Erro interno ao obter as tarefas.");
+    const result = await handler(event);
+    expect(result.statusCode).toBe(500);
+    expect(JSON.parse(result.body).message).toBe('Erro ao listar tarefas.');
   });
 });
