@@ -1,29 +1,54 @@
-import { handler } from "../src/handlers/deleteTask";
+import { handler } from "../src/handlers/getTasks";
 import { DynamoDB } from "aws-sdk";
+import * as dotenv from "dotenv";
 
-// Mock do DynamoDB
+// Load environment variables
+dotenv.config();
+
+// Declare mockScan before jest.mock
+let mockScan: jest.Mock;
+
+// Mock the aws-sdk module
 jest.mock("aws-sdk", () => {
-  const mockDelete = jest.fn();
-  const DocumentClient = {
-    delete: jest.fn(() => ({ promise: mockDelete })),
+  // Initialize mockScan within the mock factory
+  mockScan = jest.fn();
+  
+  return {
+    DynamoDB: {
+      DocumentClient: jest.fn(() => ({
+        scan: mockScan,
+      })),
+    },
   };
-  return { DynamoDB: { DocumentClient: jest.fn(() => DocumentClient) } };
 });
 
-describe("deleteTask", () => {
-  it("deve deletar uma tarefa com sucesso", async () => {
-    const event = { pathParameters: { taskId: "123" } };
-    const response = await handler(event);
-
-    expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body).message).toContain("deletada com sucesso");
+describe("getTasks", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it("deve retornar erro se taskId estiver ausente", async () => {
-    const event = { pathParameters: {} };
-    const response = await handler(event);
+  it("should return all tasks successfully", async () => {
+    mockScan.mockReturnValueOnce({
+      promise: jest.fn().mockResolvedValue({
+        Items: [{ taskId: "123", title: "Test" }],
+      }),
+    });
 
-    expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).message).toBe("taskId é obrigatório.");
+    const response = await handler({});
+
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body);
+    expect(body.tasks).toHaveLength(1);
+    expect(body.tasks[0].taskId).toBe("123");
+  });
+
+  it("should return an error in case of internal failure", async () => {
+    mockScan.mockReturnValueOnce({
+      promise: jest.fn().mockRejectedValue(new Error("Internal Error")),
+    });
+
+    const response = await handler({});
+    expect(response.statusCode).toBe(500);
+    expect(JSON.parse(response.body).message).toBe("Erro interno ao obter as tarefas.");
   });
 });
