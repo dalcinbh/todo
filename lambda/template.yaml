@@ -1,101 +1,141 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Template para o sistema de gerenciamento de tarefas (To-Do List).
+Description: >
+  Aplicação Serverless para gerenciar tarefas com API Gateway, Lambdas e DynamoDB.
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs20.x
+    Handler: index.handler
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        TASKS_TABLE: !Ref TasksTable
 
 Resources:
   # Tabela DynamoDB para armazenar as tarefas
   TasksTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: TasksTable
+      TableName: !Sub "${AWS::StackName}-tasks"
       AttributeDefinitions:
         - AttributeName: taskId
           AttributeType: S
       KeySchema:
         - AttributeName: taskId
           KeyType: HASH
-      BillingMode: PAY_PER_REQUEST  # Usa faturamento sob demanda (recomendado)
+      BillingMode: PAY_PER_REQUEST
 
   # Função Lambda para criar uma tarefa
   CreateTaskFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: dist/src/handlers/createTask.handler
-      Runtime: nodejs20.x  # Atualizado para versão suportada
-      MemorySize: 128
-      Timeout: 10
-      Environment:
-        Variables:
-          TASKS_TABLE: !Ref TasksTable
+      CodeUri: ./dist/
+      Handler: src/handlers/createTask.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref TasksTable
       Events:
-        CreateTask:
+        CreateTaskAPI:
           Type: Api
           Properties:
             Path: /tasks
-            Method: POST
-
-  # Função Lambda para listar tarefas
-  GetTasksFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: dist/src/handlers/getTasks.handler
-      Runtime: nodejs20.x  # Atualizado para versão suportada
-      MemorySize: 128
-      Timeout: 10
-      Environment:
-        Variables:
-          TASKS_TABLE: !Ref TasksTable
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref TasksTable
-      Events:
-        GetTasks:
-          Type: Api
-          Properties:
-            Path: /tasks
-            Method: GET
-
-  # Função Lambda para atualizar uma tarefa
-  UpdateTaskFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: dist/src/handlers/updateTask.handler
-      Runtime: nodejs20.x
-      MemorySize: 128
-      Timeout: 10
-      Environment:
-        Variables:
-          TASKS_TABLE: !Ref TasksTable
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref TasksTable
-      Events:
-        UpdateTask:
-          Type: Api
-          Properties:
-            Path: /tasks/{taskId}
-            Method: PUT
+            Method: post
+            RestApiId: !Ref TasksApi
 
   # Função Lambda para deletar uma tarefa
   DeleteTaskFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: dist/src/handlers/deleteTask.handler
-      Runtime: nodejs20.x
-      MemorySize: 128
-      Timeout: 10
-      Environment:
-        Variables:
-          TASKS_TABLE: !Ref TasksTable
+      CodeUri: ./dist/
+      Handler: src/handlers/deleteTask.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref TasksTable
       Events:
-        DeleteTask:
+        DeleteTaskAPI:
           Type: Api
           Properties:
             Path: /tasks/{taskId}
-            Method: DELETE
+            Method: delete
+            RestApiId: !Ref TasksApi
+
+  # Função Lambda para obter todas as tarefas
+  GetTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./dist/
+      Handler: src/handlers/getTasks.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        GetTasksAPI:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: get
+            RestApiId: !Ref TasksApi
+
+  # Função Lambda para atualizar uma tarefa
+  UpdateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./dist/
+      Handler: src/handlers/updateTask.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        UpdateTaskAPI:
+          Type: Api
+          Properties:
+            Path: /tasks/{taskId}
+            Method: put
+            RestApiId: !Ref TasksApi
+
+  # API Gateway
+  TasksApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: TasksApi
+      StageName: Prod
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: "Tasks API"
+          version: "1.0"
+        paths:
+          /tasks:
+            post:
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTaskFunction.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
+            get:
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTasksFunction.Arn}/invocations
+                httpMethod: GET
+                type: aws_proxy
+          /tasks/{taskId}:
+            delete:
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteTaskFunction.Arn}/invocations
+                httpMethod: DELETE
+                type: aws_proxy
+            put:
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateTaskFunction.Arn}/invocations
+                httpMethod: PUT
+                type: aws_proxy
+        x-amazon-apigateway-request-validator: All
+        x-amazon-apigateway-request-validators:
+          All:
+            validateRequestBody: true
+            validateRequestParameters: true
+
+Outputs:
+  ApiUrl:
+    Description: "URL da API Gateway"
+    Value: !Sub "https://${TasksApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

@@ -1,0 +1,7 @@
+{
+  "httpMethod": "POST",
+  "body": "{ \"taskName\": \"Minha nova tarefa\" }",
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}
