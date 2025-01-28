@@ -1,0 +1,36 @@
+stages:
+  - build
+  - test
+  - deploy
+
+# Build: Compilar o TypeScript
+build:
+  stage: build
+  script:
+    - echo "Instalando dependências..."
+    - npm install
+    - echo "Compilando TypeScript..."
+    - npm run build # Certifique-se de que o script `build` existe no package.json
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 hour # Os artefatos estarão disponíveis por 1 hora após o job
+
+# Test: Rodar os testes Jest
+test:
+  stage: test
+  script:
+    - echo "Executando testes..."
+    - npm run test # Certifique-se de que o script `test` está configurado no package.json
+  allow_failure: false # Falha nos testes quebra o pipeline
+
+# Deploy: Usar AWS SAM para implantar
+deploy:
+  stage: deploy
+  script:
+    - echo "Iniciando deploy com SAM..."
+    - sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+  environment:
+    name: production
+  only:
+    - main # Só realiza deploy em pushes no branch `main`

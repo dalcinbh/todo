@@ -57,3 +57,45 @@ Resources:
           Properties:
             Path: /tasks
             Method: GET
+
+  # Função Lambda para atualizar uma tarefa
+  UpdateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/updateTask.handler
+      Runtime: nodejs20.x
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        UpdateTask:
+          Type: Api
+          Properties:
+            Path: /tasks/{taskId}
+            Method: PUT
+
+  # Função Lambda para deletar uma tarefa
+  DeleteTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/deleteTask.handler
+      Runtime: nodejs20.x
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        DeleteTask:
+          Type: Api
+          Properties:
+            Path: /tasks/{taskId}
+            Method: DELETE
