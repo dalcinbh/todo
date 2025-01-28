@@ -90,6 +90,13 @@ jobs:
           role-to-assume: arn:aws:iam::183631312335:role/todogit  # Seu ARN da role aqui
           aws-region: us-east-1  # Região AWS
 
+      - name: access artefact
+      uses: actions/download-artifact@v3
+      with:
+        name: dist
+        path: lambda/dist
+
+
       - name: Build com AWS SAM
         run: |
           cd lambda
