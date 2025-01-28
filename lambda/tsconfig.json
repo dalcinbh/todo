@@ -7,6 +7,10 @@
     "esModuleInterop": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "__tests__/**/*.ts"],
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "tests/aws-sdk-mock.d.ts" // Add this line
+  ],
   "exclude": ["node_modules"]
 }
