@@ -105,4 +105,8 @@ jobs:
       - name: Deploy com AWS SAM
         run: |
           cd lambda
-          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+          sam deploy \
+            --config-file samconfig.toml \
+            --config-env dev \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
