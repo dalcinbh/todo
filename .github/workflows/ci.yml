@@ -70,17 +70,18 @@ jobs:
 
       - name: Instalar AWS CLI e AWS SAM CLI
         run: |
-          # Instalar AWS CLI manualmente
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-          aws --version  # Verificar se AWS CLI foi instalado corretamente
+          # Atualizar AWS CLI existente
+          sudo /usr/local/aws-cli/v2/current/bin/aws --version
+          sudo /usr/local/aws-cli/v2/current/bin/aws/install --update
       
           # Instalar AWS SAM CLI corretamente
           curl -L https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.deb -o aws-sam-cli.deb
-          sudo dpkg -i aws-sam-cli.deb
-          sam --version  # Verificar se AWS SAM CLI foi instalado corretamente
-    
+          sudo dpkg -i aws-sam-cli.deb || sudo apt-get install -f -y  # Corrigir dependências se necessário
+      
+          # Verificar se foi instalado corretamente
+          aws --version
+          sam --version
+      
       - name: Configurar credenciais AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
