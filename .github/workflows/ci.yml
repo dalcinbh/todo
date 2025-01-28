@@ -81,7 +81,7 @@ jobs:
           sam --version
             
       - name: Configurar credenciais AWS via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::183631312335:role/todogit  # Seu ARN da role aqui
           aws-region: us-east-1  # Região AWS
