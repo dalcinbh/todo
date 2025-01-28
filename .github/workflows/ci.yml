@@ -80,11 +80,13 @@ jobs:
           # Verificar se foi instalado corretamente
           sam --version
             
-      - name: Configurar credenciais AWS via OIDC
+      - name: Configurar credenciais AWS via Secrets
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::183631312335:role/GitHubActionsRole # Altere para o ARN da sua role
-          aws-region: us-east-1 # Altere para sua região AWS
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # Altere para sua região
+
 
       - name: Build com AWS SAM
         run: |
