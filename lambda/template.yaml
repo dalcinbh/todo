@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Template para o sistema de gerenciamento de tarefas (To-Do List).
+
+Resources:
+  # Tabela DynamoDB para armazenar as tarefas
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TasksTable
+      AttributeDefinitions:
+        - AttributeName: taskId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: taskId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST  # Usa faturamento sob demanda (recomendado)
+
+  # Função Lambda para criar uma tarefa
+  CreateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/createTask.handler
+      Runtime: nodejs20.x  # Atualizado para versão suportada
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        CreateTask:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: POST
+
+  # Função Lambda para listar tarefas
+  GetTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/src/handlers/getTasks.handler
+      Runtime: nodejs20.x  # Atualizado para versão suportada
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        GetTasks:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: GET
