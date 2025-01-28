@@ -1,0 +1,30 @@
+# Dependências do Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Diretórios de build/transpilação
+dist/
+.build/
+.esbuild/
+.aws-sam/
+serverless/
+cdk.out/
+
+# Configurações locais e arquivos temporários
+.env
+.env.local
+.DS_Store
+*.log
+*.tsbuildinfo
+
+# Arquivos do editor de código
+.vscode/
+.idea/
+*.swp
+
+# Configurações específicas para SAM e Serverless Framework
+.aws-sam/
+.serverless/
