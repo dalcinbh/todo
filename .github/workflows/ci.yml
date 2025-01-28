@@ -70,9 +70,9 @@ jobs:
 
       - name: Instalar AWS SAM CLI
         run: |
-          curl -L https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip -o sam-cli.zip
-          unzip sam-cli.zip -d sam-installation
-          sudo ./sam-installation/install
+          sudo apt-get update
+          sudo apt-get install -y awscli
+          pip install aws-sam-cli
 
       - name: Configurar credenciais AWS
         uses: aws-actions/configure-aws-credentials@v2
