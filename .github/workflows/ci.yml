@@ -91,10 +91,10 @@ jobs:
           aws-region: us-east-1  # Região AWS
 
       - name: access artefact
-      uses: actions/download-artifact@v3
-      with:
-        name: dist
-        path: lambda/dist
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: lambda/dist
 
 
       - name: Build com AWS SAM
